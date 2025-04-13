@@ -1,5 +1,7 @@
 package com.meeting.ai_summarizer.service;
 
+import com.meeting.ai_summarizer.dto.CreateMeetingDto;
+import com.meeting.ai_summarizer.dto.MeetingListResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,19 +16,20 @@ import java.util.Map;
 public class ZoomMeetingService {
 
     private final RestTemplate restTemplate;
-    @Autowired // Spring will inject the RestTemplate bean here
+
+    @Autowired
     public ZoomMeetingService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
-    public String createMeeting(String accessToken) {
+    public String createMeeting(String accessToken, CreateMeetingDto meeting) {
         String url = "https://api.zoom.us/v2/users/me/meetings";
 
         Map<String, Object> body = Map.of(
-                "topic", "AI-Powered Meeting",
+                "topic", meeting.getTopic(),
                 "type", 2,
-                "start_time", "2024-04-02T10:00:00Z",
-                "duration", 60,
+                "start_time", meeting.getStartDateTime(),
+                "duration", meeting.getDurationMinutes(),
                 "settings", Map.of("auto_recording", "cloud")
         );
 
@@ -50,6 +53,18 @@ public class ZoomMeetingService {
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
 
         return response.getBody();  // Returns JSON with recording download links
+    }
+
+
+    public MeetingListResponseDto getMeetingList(String accessToken, String userId){
+        String url= "https://api.zoom.us/v2/users/"+userId+"/meetings";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + accessToken);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        ResponseEntity<MeetingListResponseDto> response = restTemplate.exchange(url, HttpMethod.GET, request, MeetingListResponseDto.class);
+
+        return response.getBody();
+
     }
 }
 
